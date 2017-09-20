@@ -4,7 +4,6 @@
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff:
-.idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/dictionaries
 
@@ -19,7 +18,6 @@
 
 # Gradle:
 .idea/**/gradle.xml
-.idea/**/libraries
 
 # Mongo Explorer plugin:
 .idea/**/mongoSettings.xml
@@ -59,3 +57,4 @@ fabric.properties
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
+.idea/
