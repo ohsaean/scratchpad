@@ -2,26 +2,34 @@ package main
 
 import (
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"github.com/ohsaean/gogpd/lib"
+	"time"
+	"strings"
+	"math"
 )
 
 func main() {
 	//
 
-	ret := secretMap(5,
-		[]int{9, 20, 28, 18, 11},
-		[]int{30, 1, 21, 17, 28},
-	)
-	fmt.Println(ret)
+	//ret := secretMap(5,
+	//	[]int{9, 20, 28, 18, 11},
+	//	[]int{30, 1, 21, 17, 28},
+	//)
+	//fmt.Println(ret)
+	//
+	//ret = secretMap(6,
+	//	[]int{46, 33, 33, 22, 31, 50},
+	//	[]int{27, 56, 19, 14, 14, 10},
+	//)
+	//fmt.Println(ret)
+	//
+	//sum := dartGame("1D2S3T*")
+	//fmt.Println(sum)
 
-	ret = secretMap(6,
-		[]int{46, 33, 33, 22, 31, 50},
-		[]int{27, 56, 19, 14, 14, 10},
-	)
+	//ret := GetCacheExecutionTime(3, 	[]string{"Jeju","Pangyo","Seoul","NewYork","LA","Jeju","Pangyo","Seoul","NewYork","LA"})
+	ret := GetCacheExecutionTime(3, 	[]string{"Jeju","Pangyo","Seoul","Jeju","Pangyo","Seoul", "Jeju","Pangyo","Seoul"})
 	fmt.Println(ret)
-
-	sum := dartGame("1D2S3T*")
-	fmt.Println(sum)
 }
 
 func secretMap(n int, arr1 []int, arr2 []int) []string {
@@ -146,4 +154,104 @@ func dartGame(input string) int {
 	}
 
 	return sum
+}
+
+type CacheItem struct {
+	Key       string
+	Value     string
+	cacheTime int64
+	hits      int
+}
+
+type CacheServer struct {
+	MaxBucketSize int
+	Items         map[string]*CacheItem
+}
+
+func makeTimestamp() int64 {
+	return time.Now().UnixNano()
+}
+
+func NewCacheServer(size int) *CacheServer {
+	return &CacheServer{
+		MaxBucketSize: size,
+		Items:         map[string]*CacheItem{},
+	}
+}
+
+func (c *CacheServer) Get(key string) *CacheItem {
+	if value, ok := c.Items[key]; ok {
+		value.cacheTime = makeTimestamp()
+		value.hits++
+		return value
+	}
+	return nil
+}
+
+func (c *CacheServer) Set(key string, item *CacheItem) {
+	if len(c.Items) >= c.MaxBucketSize {
+		c.eviction()
+	}
+
+	if len(c.Items) > c.MaxBucketSize {
+		return
+	}
+
+	c.Items[key] = item
+	item.cacheTime = makeTimestamp()
+	item.hits = 0
+	time.Sleep(time.Nanosecond)
+}
+
+func (c *CacheServer) eviction() {
+	// LRU
+	var minCacheTime int64
+	minCacheTime = math.MaxInt64
+
+	leastUsedKey := ""
+
+	for key, val := range c.Items {
+		if val.cacheTime < minCacheTime {
+			minCacheTime = val.cacheTime
+			leastUsedKey = key
+		}
+	}
+
+	if len(leastUsedKey) > 0 {
+		delete(c.Items, leastUsedKey) // 삭제
+	}
+}
+
+func GetCacheExecutionTime(cacheSize int, cities []string) int {
+	if cacheSize < 0 || cacheSize > 30 {
+		log.Fatal("invalid cache size")
+	}
+
+	citiesSize := len(cities)
+	if citiesSize < 0 {
+		log.Fatal("empty cities")
+	}
+
+	if citiesSize > 100000 {
+		log.Fatal("max cities")
+	}
+
+	cache := NewCacheServer(cacheSize)
+
+	var executeTime int
+	executeTime = 0
+	for _, val := range cities {
+		city := strings.ToLower(val)
+		if cache.Get(city) == nil {
+			cache.Set(city, &CacheItem{
+				Key:city,
+				Value:city,
+			})
+			executeTime += 5
+		} else {
+			executeTime += 1
+		}
+	}
+
+	return executeTime
 }
